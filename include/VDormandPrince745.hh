@@ -27,23 +27,27 @@
 #ifndef DORMAND_PRINCE_745_HH
 #define DORMAND_PRINCE_745_HH
 
-#include "G4MagIntegratorStepper.hh"
+#include <G4MagIntegratorStepper.hh>
+
 
 class VDormandPrince745 : public G4MagIntegratorStepper {
 public:
-    VDormandPrince745(G4EquationOfMotion *EqRhs,
-					            G4int numberOfVariables = 6);
+    VDormandPrince745(
+        G4EquationOfMotion* equation,
+				G4int numberOfVariables = 6);
 
     ~VDormandPrince745() {}
    
-    virtual void Stepper(const G4double y[],
-                 const G4double dydx[],
-                       G4double h,
-                       G4double yout[],
-                      G4double yerr[]) override;
+    virtual void Stepper(
+        const G4double y[],
+        const G4double dydx[],
+        G4double h,
+        G4double yout[],
+        G4double yerr[]) override;
 
     virtual G4double DistChord() const override;
 
     virtual G4int IntegratorOrder() const override { return 4; }
 };
+
 #endif 

@@ -13,7 +13,7 @@
 #include <iostream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
-const G4int NUMBER_OF_INTEGRATION_STEPS = 10000;
+const G4int NUMBER_OF_INTEGRATION_STEPS = 1000000;
 using State = G4double[G4FieldTrack::ncompSVEC];
 
 template <typename Stepper, typename Equation>
@@ -23,8 +23,7 @@ void test(
     const State& state,
     G4double stepLength)
 {
-    std::cout << state[3] << " " << state[4] << " " << state[5] << std::endl;
-    Timer<microseconds> timer;
+    Timer<milliseconds> timer;
 
     State y, dydx, error;
     memcpy(y, state, sizeof(G4double) * G4FieldTrack::ncompSVEC);
@@ -80,7 +79,7 @@ int main()
     track->DumpToArray(y);
     G4double stepLength = 2.5 * CLHEP::mm;
 
-    test(method, equation, y, stepLength);
+    //test(method, equation, y, stepLength);
     test(vmethod, equation, y, stepLength);
 
     return 0;
