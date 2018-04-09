@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <iostream>
+#include <fstream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
 const G4int NUMBER_OF_INTEGRATION_STEPS = 1000000;
@@ -21,7 +22,8 @@ void test(
     Stepper& method, 
     const Equation& equation, 
     const State& state,
-    G4double stepLength)
+    G4double stepLength,
+    std::ofstream out)
 {
     Timer<milliseconds> timer;
 
@@ -32,13 +34,14 @@ void test(
     for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
         equation->RightHandSide(y, dydx);
         method.Stepper(y, dydx, stepLength, y, error);
+        out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
     }
     G4double time = timer.Elapsed();
 
 
     printf("------------------------------------------\n");
-    printf(">>  Mean / Sigma (ms)\n");
-    printf(">>  %f %f\n", time, 0.);
+    printf(">>  Time \n");
+    printf(">>  %f\n", time);
     printf("------------------------------------------\n");
 }
 
@@ -79,8 +82,8 @@ int main()
     track->DumpToArray(y);
     G4double stepLength = 2.5 * CLHEP::mm;
 
-    //test(method, equation, y, stepLength);
-    test(vmethod, equation, y, stepLength);
+    test(vmethod, equation, y, stepLength, std::ofstream("outv.txt"));
+    test(method, equation, y, stepLength, std::ofstream("out.txt"));
 
     return 0;
 }
