@@ -34,7 +34,7 @@ class VDormandPrince745 : public G4MagIntegratorStepper {
 public:
     VDormandPrince745(
         G4EquationOfMotion* equation,
-		G4int numberOfVariables = 6);
+        G4int numberOfVariables = 6);
 
     ~VDormandPrince745() {}
    
