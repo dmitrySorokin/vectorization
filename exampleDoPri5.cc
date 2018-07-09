@@ -1,5 +1,7 @@
+#include "VDormandPrince745.hh"
+#include "VMagUsualEquation.hh"
+
 #include <G4DormandPrince745.hh>
-#include <VDormandPrince745.hh>
 #include <G4UniformMagField.hh>
 #include <G4Mag_UsualEqRhs.hh>
 #include <G4FieldTrack.hh>
@@ -45,6 +47,23 @@ void test(
     printf("------------------------------------------\n");
 }
 
+template<typename Equation>
+std::unique_ptr<Equation> makeEquation(G4UniformMagField* field, const G4DynamicParticle dynParticle)
+{
+    auto equation = std::make_unique<Equation>(field);
+    equation->SetChargeMomentumMass(
+        {
+            dynParticle.GetCharge(),
+            dynParticle.GetSpin(),
+            dynParticle.GetMagneticMoment()
+        },
+        dynParticle.GetMomentum().mag(),
+        dynParticle.GetMass()
+    );
+
+    return std::move(equation);
+}
+
 int main()
 {
     G4DynamicParticle dynParticle(
@@ -65,25 +84,17 @@ int main()
     auto field = std::make_shared<G4UniformMagField>(
             G4ThreeVector(0, 0, 1 * CLHEP::tesla));
 
-    auto equation = std::make_shared<G4Mag_UsualEqRhs>(field.get());
-
-    equation->SetChargeMomentumMass(
-            {
-                dynParticle.GetCharge(),
-                dynParticle.GetSpin(),
-                dynParticle.GetMagneticMoment()
-            },
-            dynParticle.GetMomentum().mag(),
-            dynParticle.GetMass());
+    auto vequation = makeEquation<VMagUsualEquation>(field.get(), dynParticle);
+    auto equation = makeEquation<G4Mag_UsualEqRhs>(field.get(), dynParticle);
 
     G4DormandPrince745 method(equation.get(), INTEGRATED_COMPONENTS);
-    VDormandPrince745 vmethod(equation.get(), INTEGRATED_COMPONENTS);
+    VDormandPrince745<VMagUsualEquation> vmethod(vequation.get());
     State y;
     track->DumpToArray(y);
     G4double stepLength = 2.5 * CLHEP::mm;
 
-    test(vmethod, equation, y, stepLength, std::ofstream("outv.txt"));
     test(method, equation, y, stepLength, std::ofstream("out.txt"));
+    test(vmethod, equation, y, stepLength, std::ofstream("outv.txt"));
 
     return 0;
 }

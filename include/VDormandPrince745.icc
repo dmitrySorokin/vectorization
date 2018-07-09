@@ -1,35 +1,7 @@
-#include "VDormandPrince745.hh"
-
-#include <VecCore/VecCore>
-
 using namespace vecCore;
-using Double_v = typename backend::VcSimdArray<8>::Double_v;
 
-namespace {
-
-void rightHandSide(
-    G4EquationOfMotion* equation, 
-    const Double_v& yIn, 
-    Double_v& dydxOut)
-{
-    G4double y[8], dydx[8];
-    Store(yIn, y);
-
-    equation->RightHandSide(y, dydx);
-
-    Load(dydxOut, dydx);
-}
-
-} // namepsace
-
-VDormandPrince745::VDormandPrince745(
-    G4EquationOfMotion* equation,
-    G4int noIntegrationVariables)
-    : G4MagIntegratorStepper(equation, noIntegrationVariables)
-{
-}
-
-void VDormandPrince745::Stepper(
+template <typename EquationOfMotion>
+void VDormandPrince745<EquationOfMotion>::Stepper(
     const G4double yInput[],
     const G4double dydx[],
     G4double step,
@@ -64,47 +36,38 @@ void VDormandPrince745::Stepper(
         dc7 = -(- 1.0 / 40.0);
 
 
-    Double_v yIn, dydxIn, yOut, yTemp, yErr;
-    Double_v ak2, ak3, ak4, ak5, ak6, ak7;
+    Double_8v yIn, dydxIn, yOut, yTemp, yErr;
     Load(yIn, yInput);
     Load(dydxIn, dydx);
 
     
-    auto equation = GetEquationOfMotion();
-    
-    // RightHandSide(yIn, dydxIn);
+    // dydxIn = fEquation(yIn);
     yTemp = yIn + b21 * step * dydxIn;
 
-    rightHandSide(equation, yTemp, ak2);             
+    Double_8v ak2 = (*fEquation)(yTemp);            
     yTemp = yIn + step * (b31 * dydxIn + b32 * ak2);
 
-    rightHandSide(equation, yTemp, ak3);
+    Double_8v ak3 = (*fEquation)(yTemp);
     yTemp = yIn + step * (b41 * dydxIn + b42 * ak2 + b43 * ak3);
 
-    rightHandSide(equation, yTemp, ak4);
+    Double_8v ak4 = (*fEquation)(yTemp);
     yTemp = yIn + step * (b51 * dydxIn + b52 * ak2 + b53 * ak3 + b54 * ak4);
 
-    rightHandSide(equation, yTemp, ak5); 
+    Double_8v ak5 = (*fEquation)(yTemp); 
     yTemp = yIn + step * 
         (b61 * dydxIn + b62 * ak2 + b63 * ak3 + b64 * ak4 + b65 * ak5);
 
-    rightHandSide(equation, yTemp, ak6);
+    Double_8v ak6 = (*fEquation)(yTemp);
     yOut = yIn + step * 
         (b71 * dydxIn + b72 * ak2 + b73 * ak3 + 
             b74 * ak4 + b75 * ak5 + b76 * ak6);
 
-    rightHandSide(equation, yOut, ak7);
+    Double_8v ak7 = (*fEquation)(yOut);
     yErr = step * 
         (dc1 * dydxIn + dc2 * ak2 + dc3 * ak3 + 
             dc4 * ak4 + dc5 * ak5 + dc6 * ak6 + dc7 * ak7);
 
     Store(yErr, yError);
     Store(yOut, yOutput);
-}
-
-G4double VDormandPrince745::DistChord() const
-{
-    assert(false);
-    return 0;
 }
 
