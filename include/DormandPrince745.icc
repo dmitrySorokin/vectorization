@@ -1,0 +1,121 @@
+#include <G4FieldUtils.hh>
+#include <G4LineSection.hh>
+
+using namespace field_utils;
+
+template <typename EquationOfMotion>
+void DormandPrince745<EquationOfMotion>::Stepper(
+    const G4double yInput[],
+    const G4double dydxInput[],
+    G4double hstep,
+    G4double yOutput[],
+    G4double yError[])
+{
+    copy(fyIn, yInput);
+    copy(fdydx, dydxInput);
+    fhstep = hstep;
+    
+    makeStep(fyIn, dydxInput, fhstep, fyOut, yError);
+
+    copy(yOutput, fyOut);
+}
+
+template <typename EquationOfMotion>
+void DormandPrince745<EquationOfMotion>::makeStep(
+    const G4double yInput[],
+    const G4double dydxInput[],
+    G4double hstep,
+    G4double yOutput[],
+    G4double yError[])
+{
+    const G4double
+        b21 = 0.2,
+    
+        b31 = 3.0 / 40.0, b32 = 9.0 / 40.0,
+    
+        b41 = 44.0/45.0, b42 = -56.0 / 15.0, b43 = 32.0 / 9.0,
+        
+        b51 = 19372.0 / 6561.0, b52 = -25360.0 / 2187.0, b53 = 64448.0 / 6561.0,
+        b54 = -212.0 / 729.0 ,
+        
+        b61 = 9017.0 / 3168.0 , b62 =   -355.0 / 33.0,
+        b63 =  46732.0 / 5247.0, b64 = 49.0 / 176.0,
+        b65 = -5103.0 / 18656.0,
+        
+        b71 = 35.0 / 384.0, b72 = 0.,
+        b73 = 500.0 / 1113.0, b74 = 125.0 / 192.0,
+        b75 = -2187.0 / 6784.0, b76 = 11.0 / 84.0,
+     
+    
+        dc1 = -(b71 - 5179.0 / 57600.0),
+        dc2 = -(b72 - .0),
+        dc3 = -(b73 - 7571.0 / 16695.0),
+        dc4 = -(b74 - 393.0 / 640.0),
+        dc5 = -(b75 + 92097.0 / 339200.0),
+        dc6 = -(b76 - 187.0 / 2100.0),
+        dc7 = -(- 1.0 / 40.0);
+
+
+    G4double yTemp[G4FieldTrack::ncompSVEC];
+    yOutput[7] = yTemp[7] = yInput[7];
+    
+    // dydxIn = fEquation(yIn);
+    for (G4int i = 0; i < 6; ++i)
+        yTemp[i] = yInput[i] + b21 * hstep * dydxInput[i];
+
+    fEquation->RightHandSide(yTemp, ak2);    
+    for (G4int i = 0; i < 6; ++i)        
+        yTemp[i] = yInput[i] + hstep * (b31 * dydxInput[i] + b32 * ak2[i]);
+
+    fEquation->RightHandSide(yTemp, ak3);
+    for (G4int i = 0; i < 6; ++i)
+        yTemp[i] = yInput[i] + hstep * (b41 * dydxInput[i] + b42 * ak2[i] + b43 * ak3[i]);
+
+    fEquation->RightHandSide(yTemp, ak4);
+    for (G4int i = 0; i < 6; ++i)
+        yTemp[i] = yInput[i] + hstep * (b51 * dydxInput[i] + b52 * ak2[i] + b53 * ak3[i] + b54 * ak4[i]);
+
+    fEquation->RightHandSide(yTemp, ak5);
+    for (G4int i = 0; i < 6; ++i)
+        yTemp[i] = yInput[i] + hstep * 
+            (b61 * dydxInput[i] + b62 * ak2[i] + b63 * ak3[i] + b64 * ak4[i] + b65 * ak5[i]);
+
+    fEquation->RightHandSide(yTemp, ak6);
+    for (G4int i = 0; i < 6; ++i)
+        yOutput[i] = yInput[i] + hstep * 
+            (b71 * dydxInput[i] + b72 * ak2[i] + b73 * ak3[i] + 
+             b74 * ak4[i] + b75 * ak5[i] + b76 * ak6[i]);
+
+    fEquation->RightHandSide(yOutput, ak7);
+    for (G4int i = 0; i < 6; ++i)
+        yError[i] = hstep * 
+            (dc1 * dydxInput[i] + dc2 * ak2[i] + dc3 * ak3[i] + 
+            dc4 * ak4[i] + dc5 * ak5[i] + dc6 * ak6[i] + dc7 * ak7[i]);
+}
+
+
+template <typename EquationOfMotion>
+G4double DormandPrince745<EquationOfMotion>::DistChord() const
+{
+    const G4double
+        hf1 = 6025192743.0 / 30085553152.0,
+        hf2 = 0.0,
+        hf3 = 51252292925.0 / 65400821598.0,
+        hf4 = - 2691868925.0 / 45128329728.0,
+        hf5 = 187940372067.0 / 1594534317056.0,
+        hf6 = - 1776094331.0 / 19743644256.0,
+        hf7 = 11237099.0 / 235043384.0;
+
+    const G4ThreeVector begin = makeVector(fyIn, Value3D::Position);
+    const G4ThreeVector end = makeVector(fyOut, Value3D::Position);
+    G4ThreeVector mid;
+
+    for(G4int i = 0; i < 3; ++i) {
+       mid[i] = begin[i] + 0.5 * fhstep * 
+           (hf1 * fdydx[i] + hf2 * ak2[i] + hf3 * ak3[i] + 
+            hf4 * ak4[i] + hf5 * ak5[i] + hf6 * ak6[i] + hf7 * ak7[i]);
+    }
+
+    return G4LineSection::Distline(mid, begin, end);
+}
+

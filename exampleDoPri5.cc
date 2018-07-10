@@ -1,5 +1,7 @@
 #include "VDormandPrince745.hh"
 #include "VMagUsualEquation.hh"
+#include "DormandPrince745.hh"
+#include "MagUsualEquation.hh"
 
 #include <G4DormandPrince745.hh>
 #include <G4UniformMagField.hh>
@@ -19,6 +21,8 @@ const G4int INTEGRATED_COMPONENTS = 6;
 const G4int NUMBER_OF_INTEGRATION_STEPS = 10000000;
 using State = G4double[G4FieldTrack::ncompSVEC];
 using VEquation = VMagUsualEquation<G4UniformMagField>;
+using Equation = MagUsualEquation<G4UniformMagField>;
+
 
 template <typename Stepper, typename Equation>
 void test(
@@ -118,15 +122,18 @@ int main()
             G4ThreeVector(0, 0, 1 * CLHEP::tesla));
 
     auto vequation = makeEquation<VEquation>(field.get(), dynParticle);
+    auto iequation = makeEquation<Equation>(field.get(), dynParticle);
     auto equation = makeEquation<G4Mag_UsualEqRhs>(field.get(), dynParticle);
 
     G4DormandPrince745 method(equation.get(), INTEGRATED_COMPONENTS);
     VDormandPrince745<VEquation> vmethod(vequation.get());
+    DormandPrince745<Equation> imethod(iequation.get());
     State y;
     track->DumpToArray(y);
     G4double stepLength = 2.5 * CLHEP::mm;
 
     vtest(vmethod, vequation, y, stepLength, std::ofstream("vout.txt"));
+    test(imethod, iequation, y, stepLength, std::ofstream("iout.txt"));
     test(method, equation, y, stepLength, std::ofstream("out.txt"));
 
     return 0;
