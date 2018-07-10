@@ -52,7 +52,7 @@ private:
         const Double_8v& dydx,
         G4double hstep,
         Double_8v& yOutput,
-        Double_8v* yError = nullptr);
+        Double_8v& yError);
 
     EquationOfMotion* fEquation;
     Double_8v fyIn, fyOut, fdydx;

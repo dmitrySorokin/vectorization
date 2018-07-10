@@ -1,31 +1,28 @@
-#include "VMagUsualEquation.hh"
-
 #include "aliases.hh"
 
 #include <G4MagneticField.hh>
 #include <G4PhysicalConstants.hh>
 
-VMagUsualEquation::VMagUsualEquation(G4MagneticField* field):
+template <typename Field>
+VMagUsualEquation<Field>::VMagUsualEquation(Field* field):
     fCof(0),
     fBField(field)
 {}
 
-void VMagUsualEquation::SetChargeMomentumMass(G4ChargeState particleCharge,
-                                              G4double momentumXc,
-                                              G4double particleMass)
+template <typename Field>
+void VMagUsualEquation<Field>::SetChargeMomentumMass(G4ChargeState particleCharge,
+                                                     G4double /*momentumXc*/,
+                                                     G4double /*particleMass*/)
 {
    G4double pcharge = particleCharge.GetCharge();
    fCof = pcharge * CLHEP::eplus * CLHEP::c_light;
 }
 
-Double_8v VMagUsualEquation::operator() (const Double_8v& y)
+template <typename Field>
+Double_8v VMagUsualEquation<Field>::operator() (const Double_8v& y)
 {
     G4double B[4];
-    G4double point[4];
-    point[0] = y[0];
-    point[1] = y[1];
-    point[2] = y[2];
-    point[3] = y[7];
+    G4double point[] = {y[0], y[1], y[2], y[7]};
     fBField->GetFieldValue(point, B);
 
     Double_4v yPermutationA{y[3], y[4], y[5], 0};

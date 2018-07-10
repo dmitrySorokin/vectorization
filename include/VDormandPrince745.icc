@@ -15,7 +15,7 @@ void VDormandPrince745<EquationOfMotion>::Stepper(
     fdydx = dydxInput;
     fhstep = hstep;
     
-    makeStep(fyIn, dydxInput, fhstep, fyOut, &yError);
+    makeStep(fyIn, dydxInput, fhstep, fyOut, yError);
 
     yOutput = fyOut;
 }
@@ -26,7 +26,7 @@ void VDormandPrince745<EquationOfMotion>::makeStep(
     const Double_8v& dydxInput,
     G4double hstep,
     Double_8v& yOutput,
-    Double_8v* yError)
+    Double_8v& yError)
 {
     const G4double
         b21 = 0.2,
@@ -80,12 +80,10 @@ void VDormandPrince745<EquationOfMotion>::makeStep(
         (b71 * dydxInput + b72 * ak2 + b73 * ak3 + 
             b74 * ak4 + b75 * ak5 + b76 * ak6);
 
-    if (yError) {
-        ak7 = (*fEquation)(yOutput);
-        *yError = hstep * 
-            (dc1 * dydxInput + dc2 * ak2 + dc3 * ak3 + 
-             dc4 * ak4 + dc5 * ak5 + dc6 * ak6 + dc7 * ak7);
-    }
+    ak7 = (*fEquation)(yOutput);
+    yError = hstep * 
+        (dc1 * dydxInput + dc2 * ak2 + dc3 * ak3 + 
+         dc4 * ak4 + dc5 * ak5 + dc6 * ak6 + dc7 * ak7);
 }
 
 

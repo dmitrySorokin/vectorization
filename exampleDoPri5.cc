@@ -16,8 +16,9 @@
 #include <fstream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
-const G4int NUMBER_OF_INTEGRATION_STEPS = 10000;
+const G4int NUMBER_OF_INTEGRATION_STEPS = 10000000;
 using State = G4double[G4FieldTrack::ncompSVEC];
+using VEquation = VMagUsualEquation<G4UniformMagField>;
 
 template <typename Stepper, typename Equation>
 void test(
@@ -36,9 +37,9 @@ void test(
     for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
         equation->RightHandSide(y, dydx);
         method.Stepper(y, dydx, stepLength, y, error);
-        out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
-        out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
-        out << method.DistChord() << "\n";
+        //out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
+        //out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
+        //out << method.DistChord() << "\n";
     }
     G4double time = timer.Elapsed();
 
@@ -60,15 +61,15 @@ void vtest(
     Timer<milliseconds> timer;
 
     Double_8v y, dydx, error;
-    memcpy(&y, state, sizeof(G4double) * G4FieldTrack::ncompSVEC);
+    vecCore::Load(y, state);
 
     timer.Start();
     for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
         dydx = (*equation)(y);
         method.Stepper(y, dydx, stepLength, y, error);
-        out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
-        out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
-        out << method.DistChord() << "\n";
+        //out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
+        //out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
+        //out << method.DistChord() << "\n";
     }
     G4double time = timer.Elapsed();
 
@@ -116,16 +117,16 @@ int main()
     auto field = std::make_unique<G4UniformMagField>(
             G4ThreeVector(0, 0, 1 * CLHEP::tesla));
 
-    auto vequation = makeEquation<VMagUsualEquation>(field.get(), dynParticle);
+    auto vequation = makeEquation<VEquation>(field.get(), dynParticle);
     auto equation = makeEquation<G4Mag_UsualEqRhs>(field.get(), dynParticle);
 
     G4DormandPrince745 method(equation.get(), INTEGRATED_COMPONENTS);
-    VDormandPrince745<VMagUsualEquation> vmethod(vequation.get());
+    VDormandPrince745<VEquation> vmethod(vequation.get());
     State y;
     track->DumpToArray(y);
     G4double stepLength = 2.5 * CLHEP::mm;
 
-    vtest(vmethod, vequation, y, stepLength, std::ofstream("outv.txt"));
+    vtest(vmethod, vequation, y, stepLength, std::ofstream("vout.txt"));
     test(method, equation, y, stepLength, std::ofstream("out.txt"));
 
     return 0;

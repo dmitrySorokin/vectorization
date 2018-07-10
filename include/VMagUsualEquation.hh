@@ -5,11 +5,10 @@
 
 #include <G4ChargeState.hh>
 
-class G4MagneticField;
-
+template <typename Field>
 class VMagUsualEquation {
 public:
-    VMagUsualEquation(G4MagneticField* field);
+    VMagUsualEquation(Field* field);
 
     void SetChargeMomentumMass(G4ChargeState particleCharge,
                                G4double momentumXc,
@@ -19,7 +18,9 @@ public:
 
 private:
     G4double fCof;
-    G4MagneticField* fBField;
+    Field* fBField;
 };
+
+#include "VMagUsualEquation.icc"
 
 #endif
