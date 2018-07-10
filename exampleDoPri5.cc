@@ -16,7 +16,7 @@
 #include <fstream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
-const G4int NUMBER_OF_INTEGRATION_STEPS = 1000000;
+const G4int NUMBER_OF_INTEGRATION_STEPS = 10000;
 using State = G4double[G4FieldTrack::ncompSVEC];
 
 template <typename Stepper, typename Equation>
@@ -37,6 +37,8 @@ void test(
         equation->RightHandSide(y, dydx);
         method.Stepper(y, dydx, stepLength, y, error);
         out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
+        out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
+        out << method.DistChord() << "\n";
     }
     G4double time = timer.Elapsed();
 
@@ -47,8 +49,38 @@ void test(
     printf("------------------------------------------\n");
 }
 
-template<typename Equation>
-std::unique_ptr<Equation> makeEquation(G4UniformMagField* field, const G4DynamicParticle dynParticle)
+template <typename Stepper, typename Equation>
+void vtest(
+    Stepper& method, 
+    const Equation& equation, 
+    const State& state,
+    G4double stepLength,
+    std::ofstream out)
+{
+    Timer<milliseconds> timer;
+
+    Double_8v y, dydx, error;
+    memcpy(&y, state, sizeof(G4double) * G4FieldTrack::ncompSVEC);
+
+    timer.Start();
+    for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
+        dydx = (*equation)(y);
+        method.Stepper(y, dydx, stepLength, y, error);
+        out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
+        out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
+        out << method.DistChord() << "\n";
+    }
+    G4double time = timer.Elapsed();
+
+
+    printf("------------------------------------------\n");
+    printf(">>  Time \n");
+    printf(">>  %f\n", time);
+    printf("------------------------------------------\n");
+}
+
+template<typename Equation, typename Field>
+std::unique_ptr<Equation> makeEquation(Field* field, const G4DynamicParticle dynParticle)
 {
     auto equation = std::make_unique<Equation>(field);
     equation->SetChargeMomentumMass(
@@ -81,7 +113,7 @@ int main()
             dynParticle.GetCharge(),
             dynParticle.GetPolarization());
 
-    auto field = std::make_shared<G4UniformMagField>(
+    auto field = std::make_unique<G4UniformMagField>(
             G4ThreeVector(0, 0, 1 * CLHEP::tesla));
 
     auto vequation = makeEquation<VMagUsualEquation>(field.get(), dynParticle);
@@ -93,8 +125,8 @@ int main()
     track->DumpToArray(y);
     G4double stepLength = 2.5 * CLHEP::mm;
 
+    vtest(vmethod, vequation, y, stepLength, std::ofstream("outv.txt"));
     test(method, equation, y, stepLength, std::ofstream("out.txt"));
-    test(vmethod, equation, y, stepLength, std::ofstream("outv.txt"));
 
     return 0;
 }

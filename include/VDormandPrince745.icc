@@ -1,12 +1,32 @@
-using namespace vecCore;
+#include <G4FieldUtils.hh>
+#include <G4LineSection.hh>
+
+using namespace field_utils;
 
 template <typename EquationOfMotion>
 void VDormandPrince745<EquationOfMotion>::Stepper(
-    const G4double yInput[],
-    const G4double dydx[],
-    G4double step,
-    G4double yOutput[],
-    G4double yError[])
+    const Double_8v& yInput,
+    const Double_8v& dydxInput,
+    G4double hstep,
+    Double_8v& yOutput,
+    Double_8v& yError)
+{
+    fyIn = yInput;
+    fdydx = dydxInput;
+    fhstep = hstep;
+    
+    makeStep(fyIn, dydxInput, fhstep, fyOut, &yError);
+
+    yOutput = fyOut;
+}
+
+template <typename EquationOfMotion>
+void VDormandPrince745<EquationOfMotion>::makeStep(
+    const Double_8v& yInput,
+    const Double_8v& dydxInput,
+    G4double hstep,
+    Double_8v& yOutput,
+    Double_8v* yError)
 {
     const G4double
         b21 = 0.2,
@@ -36,38 +56,61 @@ void VDormandPrince745<EquationOfMotion>::Stepper(
         dc7 = -(- 1.0 / 40.0);
 
 
-    Double_8v yIn, dydxIn, yOut, yTemp, yErr;
-    Load(yIn, yInput);
-    Load(dydxIn, dydx);
-
+    Double_8v yTemp;
+    yOutput[7] = yTemp[7] = yInput[7];
     
     // dydxIn = fEquation(yIn);
-    yTemp = yIn + b21 * step * dydxIn;
+    yTemp = yInput + b21 * hstep * dydxInput;
 
-    Double_8v ak2 = (*fEquation)(yTemp);            
-    yTemp = yIn + step * (b31 * dydxIn + b32 * ak2);
+    ak2 = (*fEquation)(yTemp);            
+    yTemp = yInput + hstep * (b31 * dydxInput + b32 * ak2);
 
-    Double_8v ak3 = (*fEquation)(yTemp);
-    yTemp = yIn + step * (b41 * dydxIn + b42 * ak2 + b43 * ak3);
+    ak3 = (*fEquation)(yTemp);
+    yTemp = yInput + hstep * (b41 * dydxInput + b42 * ak2 + b43 * ak3);
 
-    Double_8v ak4 = (*fEquation)(yTemp);
-    yTemp = yIn + step * (b51 * dydxIn + b52 * ak2 + b53 * ak3 + b54 * ak4);
+    ak4 = (*fEquation)(yTemp);
+    yTemp = yInput + hstep * (b51 * dydxInput + b52 * ak2 + b53 * ak3 + b54 * ak4);
 
-    Double_8v ak5 = (*fEquation)(yTemp); 
-    yTemp = yIn + step * 
-        (b61 * dydxIn + b62 * ak2 + b63 * ak3 + b64 * ak4 + b65 * ak5);
+    ak5 = (*fEquation)(yTemp); 
+    yTemp = yInput + hstep * 
+        (b61 * dydxInput + b62 * ak2 + b63 * ak3 + b64 * ak4 + b65 * ak5);
 
-    Double_8v ak6 = (*fEquation)(yTemp);
-    yOut = yIn + step * 
-        (b71 * dydxIn + b72 * ak2 + b73 * ak3 + 
+    ak6 = (*fEquation)(yTemp);
+    yOutput = yInput + hstep * 
+        (b71 * dydxInput + b72 * ak2 + b73 * ak3 + 
             b74 * ak4 + b75 * ak5 + b76 * ak6);
 
-    Double_8v ak7 = (*fEquation)(yOut);
-    yErr = step * 
-        (dc1 * dydxIn + dc2 * ak2 + dc3 * ak3 + 
-            dc4 * ak4 + dc5 * ak5 + dc6 * ak6 + dc7 * ak7);
+    if (yError) {
+        ak7 = (*fEquation)(yOutput);
+        *yError = hstep * 
+            (dc1 * dydxInput + dc2 * ak2 + dc3 * ak3 + 
+             dc4 * ak4 + dc5 * ak5 + dc6 * ak6 + dc7 * ak7);
+    }
+}
 
-    Store(yErr, yError);
-    Store(yOut, yOutput);
+
+template <typename EquationOfMotion>
+G4double VDormandPrince745<EquationOfMotion>::DistChord() const
+{
+    const G4double
+        hf1 = 6025192743.0 / 30085553152.0,
+        hf2 = 0.0,
+        hf3 = 51252292925.0 / 65400821598.0,
+        hf4 = - 2691868925.0 / 45128329728.0,
+        hf5 = 187940372067.0 / 1594534317056.0,
+        hf6 = - 1776094331.0 / 19743644256.0,
+        hf7 = 11237099.0 / 235043384.0;
+
+    const G4ThreeVector begin = makeVector(fyIn, Value3D::Position);
+    const G4ThreeVector end = makeVector(fyOut, Value3D::Position);
+    G4ThreeVector mid;
+
+    for(G4int i = 0; i < 3; ++i) {
+       mid[i] = begin[i] + 0.5 * fhstep * 
+           (hf1 * fdydx[i] + hf2 * ak2[i] + hf3 * ak3[i] + 
+            hf4 * ak4[i] + hf5 * ak5[i] + hf6 * ak6[i] + hf7 * ak7[i]);
+    }
+
+    return G4LineSection::Distline(mid, begin, end);
 }
 

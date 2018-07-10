@@ -3,7 +3,6 @@
 #include "aliases.hh"
 
 #include <G4MagneticField.hh>
-#include <globals.hh>
 #include <G4PhysicalConstants.hh>
 
 VMagUsualEquation::VMagUsualEquation(G4MagneticField* field):

@@ -38,14 +38,26 @@ public:
     {}
    
     void Stepper(
-        const G4double y[],
-        const G4double dydx[],
-        G4double h,
-        G4double yout[],
-        G4double yerr[]);
+        const Double_8v& yInput,
+        const Double_8v& dydxInput,
+        G4double hstep,
+        Double_8v& yOutput,
+        Double_8v& yError);
+
+    G4double DistChord() const;
 
 private:
+    void makeStep(
+        const Double_8v& yInput,
+        const Double_8v& dydx,
+        G4double hstep,
+        Double_8v& yOutput,
+        Double_8v* yError = nullptr);
+
     EquationOfMotion* fEquation;
+    Double_8v fyIn, fyOut, fdydx;
+    Double_8v ak2, ak3, ak4, ak5, ak6, ak7;
+    G4double fhstep;
 };
 
 #include "VDormandPrince745.icc"
