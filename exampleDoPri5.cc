@@ -19,7 +19,7 @@
 #include <fstream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
-const G4int NUMBER_OF_INTEGRATION_STEPS = 1000;
+const G4int NUMBER_OF_INTEGRATION_STEPS = 100000000;
 using G4State = G4double[G4FieldTrack::ncompSVEC];
 using VEquation = MagUsualEquation<G4UniformMagField, Double_8v>;
 using Equation = MagUsualEquation<G4UniformMagField, G4State>;
