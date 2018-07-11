@@ -2,19 +2,18 @@
 #define VMAG_USUAL_EQUATION
 
 #include "aliases.hh"
-
-#include <G4ChargeState.hh>
+#include "MagUsualEquation.hh"
 
 template <typename Field>
-class VMagUsualEquation {
+class MagUsualEquation<Field, Double_8v> {
 public:
-    VMagUsualEquation(Field* field);
+    MagUsualEquation(Field* field);
 
     void SetChargeMomentumMass(G4ChargeState particleCharge,
                                G4double momentumXc,
                                G4double particleMass);
 
-    Double_8v operator() (const Double_8v& y);
+    void RightHandSide(const Double_8v& y, Double_8v& dydx);
 
 private:
     G4double fCof;

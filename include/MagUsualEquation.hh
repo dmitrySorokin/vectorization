@@ -1,11 +1,10 @@
 #ifndef MAG_USUAL_EQUATION
 #define MAG_USUAL_EQUATION
 
-#include "aliases.hh"
 
 #include <G4ChargeState.hh>
 
-template <typename Field>
+template <typename Field, typename State>
 class MagUsualEquation {
 public:
     MagUsualEquation(Field* field);
@@ -14,7 +13,7 @@ public:
                                G4double momentumXc,
                                G4double particleMass);
 
-    void RightHandSide(const G4double y[], G4double dydx[]);
+    void RightHandSide(const State& y, State& dydx);
 
 private:
     G4double fCof;

@@ -1,14 +1,13 @@
-#include <G4MagneticField.hh>
 #include <G4PhysicalConstants.hh>
 
-template <typename Field>
-MagUsualEquation<Field>::MagUsualEquation(Field* field):
+template <typename Field, typename State>
+MagUsualEquation<Field, State>::MagUsualEquation(Field* field):
     fCof(0),
     fBField(field)
 {}
 
-template <typename Field>
-void MagUsualEquation<Field>::SetChargeMomentumMass(G4ChargeState particleCharge,
+template <typename Field, typename State>
+void MagUsualEquation<Field, State>::SetChargeMomentumMass(G4ChargeState particleCharge,
                                                      G4double /*momentumXc*/,
                                                      G4double /*particleMass*/)
 {
@@ -16,8 +15,8 @@ void MagUsualEquation<Field>::SetChargeMomentumMass(G4ChargeState particleCharge
    fCof = pcharge * CLHEP::eplus * CLHEP::c_light;
 }
 
-template <typename Field>
-void MagUsualEquation<Field>::RightHandSide(const G4double y[], G4double dydx[])
+template <typename Field, typename State>
+void MagUsualEquation<Field, State>::RightHandSide(const State& y, State& dydx)
 {
     G4double B[4];
     G4double point[] = {y[0], y[1], y[2], y[7]};

@@ -1,3 +1,4 @@
+#include "aliases.hh"
 #include "VDormandPrince745.hh"
 #include "VMagUsualEquation.hh"
 #include "DormandPrince745.hh"
@@ -18,13 +19,28 @@
 #include <fstream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
-const G4int NUMBER_OF_INTEGRATION_STEPS = 10000000;
-using State = G4double[G4FieldTrack::ncompSVEC];
-using VEquation = VMagUsualEquation<G4UniformMagField>;
-using Equation = MagUsualEquation<G4UniformMagField>;
+const G4int NUMBER_OF_INTEGRATION_STEPS = 1000;
+using G4State = G4double[G4FieldTrack::ncompSVEC];
+using VEquation = MagUsualEquation<G4UniformMagField, Double_8v>;
+using Equation = MagUsualEquation<G4UniformMagField, G4State>;
 
 
-template <typename Stepper, typename Equation>
+template <typename D, typename S>
+void copy(D& dst, const S& src)
+{
+    for (G4int i = 0; i < G4FieldTrack::ncompSVEC; ++i) {
+        dst[i] = src[i];
+    }
+}
+
+template <>
+void copy(Double_8v& dst, const G4State& src)
+{
+    vecCore::Load(dst, src);
+}
+
+
+template <typename Stepper, typename Equation, typename State>
 void test(
     Stepper& method, 
     const Equation& equation, 
@@ -35,41 +51,11 @@ void test(
     Timer<milliseconds> timer;
 
     State y, dydx, error;
-    memcpy(y, state, sizeof(G4double) * G4FieldTrack::ncompSVEC);
+    copy(y, state);
 
     timer.Start();
     for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
         equation->RightHandSide(y, dydx);
-        method.Stepper(y, dydx, stepLength, y, error);
-        //out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
-        //out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
-        //out << method.DistChord() << "\n";
-    }
-    G4double time = timer.Elapsed();
-
-
-    printf("------------------------------------------\n");
-    printf(">>  Time \n");
-    printf(">>  %f\n", time);
-    printf("------------------------------------------\n");
-}
-
-template <typename Stepper, typename Equation>
-void vtest(
-    Stepper& method, 
-    const Equation& equation, 
-    const State& state,
-    G4double stepLength,
-    std::ofstream out)
-{
-    Timer<milliseconds> timer;
-
-    Double_8v y, dydx, error;
-    vecCore::Load(y, state);
-
-    timer.Start();
-    for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
-        dydx = (*equation)(y);
         method.Stepper(y, dydx, stepLength, y, error);
         //out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
         //out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
@@ -126,13 +112,18 @@ int main()
     auto equation = makeEquation<G4Mag_UsualEqRhs>(field.get(), dynParticle);
 
     G4DormandPrince745 method(equation.get(), INTEGRATED_COMPONENTS);
-    VDormandPrince745<VEquation> vmethod(vequation.get());
-    DormandPrince745<Equation> imethod(iequation.get());
-    State y;
+    DormandPrince745<VEquation, Double_8v> vmethod(vequation.get());
+    DormandPrince745<Equation, G4State> imethod(iequation.get());
+    
+    G4State y;
     track->DumpToArray(y);
+
+    Double_8v vy;
+    copy(vy, y);
+    
     G4double stepLength = 2.5 * CLHEP::mm;
 
-    vtest(vmethod, vequation, y, stepLength, std::ofstream("vout.txt"));
+    test(vmethod, vequation, vy, stepLength, std::ofstream("vout.txt"));
     test(imethod, iequation, y, stepLength, std::ofstream("iout.txt"));
     test(method, equation, y, stepLength, std::ofstream("out.txt"));
 

@@ -4,22 +4,22 @@
 #include <G4PhysicalConstants.hh>
 
 template <typename Field>
-VMagUsualEquation<Field>::VMagUsualEquation(Field* field):
+MagUsualEquation<Field, Double_8v>::MagUsualEquation(Field* field):
     fCof(0),
     fBField(field)
 {}
 
 template <typename Field>
-void VMagUsualEquation<Field>::SetChargeMomentumMass(G4ChargeState particleCharge,
-                                                     G4double /*momentumXc*/,
-                                                     G4double /*particleMass*/)
+void MagUsualEquation<Field, Double_8v>::SetChargeMomentumMass(G4ChargeState particleCharge,
+                                                                G4double /*momentumXc*/,
+                                                                G4double /*particleMass*/)
 {
    G4double pcharge = particleCharge.GetCharge();
    fCof = pcharge * CLHEP::eplus * CLHEP::c_light;
 }
 
 template <typename Field>
-Double_8v VMagUsualEquation<Field>::operator() (const Double_8v& y)
+void MagUsualEquation<Field, Double_8v>::RightHandSide(const Double_8v& y, Double_8v& dydx)
 {
     G4double B[4];
     G4double point[] = {y[0], y[1], y[2], y[7]};
@@ -44,7 +44,7 @@ Double_8v VMagUsualEquation<Field>::operator() (const Double_8v& y)
     Double_4v momentumGradient = cof * (yPermutationB * BmagPermutationB
             - yPermutationC * BmagPermutationA);
 
-    return {positionGradient[0], positionGradient[1], positionGradient[2], 
+    dydx = {positionGradient[0], positionGradient[1], positionGradient[2], 
             momentumGradient[0], momentumGradient[1], momentumGradient[2],
             0, 0};
 }

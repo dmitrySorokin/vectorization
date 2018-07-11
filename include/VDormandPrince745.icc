@@ -1,10 +1,11 @@
 #include <G4FieldUtils.hh>
 #include <G4LineSection.hh>
 
+
 using namespace field_utils;
 
 template <typename EquationOfMotion>
-void VDormandPrince745<EquationOfMotion>::Stepper(
+void DormandPrince745<EquationOfMotion, Double_8v>::Stepper(
     const Double_8v& yInput,
     const Double_8v& dydxInput,
     G4double hstep,
@@ -21,7 +22,7 @@ void VDormandPrince745<EquationOfMotion>::Stepper(
 }
 
 template <typename EquationOfMotion>
-void VDormandPrince745<EquationOfMotion>::makeStep(
+void DormandPrince745<EquationOfMotion, Double_8v>::makeStep(
     const Double_8v& yInput,
     const Double_8v& dydxInput,
     G4double hstep,
@@ -62,25 +63,25 @@ void VDormandPrince745<EquationOfMotion>::makeStep(
     // dydxIn = fEquation(yIn);
     yTemp = yInput + b21 * hstep * dydxInput;
 
-    ak2 = (*fEquation)(yTemp);            
+    fEquation->RightHandSide(yTemp, ak2);            
     yTemp = yInput + hstep * (b31 * dydxInput + b32 * ak2);
 
-    ak3 = (*fEquation)(yTemp);
+    fEquation->RightHandSide(yTemp, ak3);
     yTemp = yInput + hstep * (b41 * dydxInput + b42 * ak2 + b43 * ak3);
 
-    ak4 = (*fEquation)(yTemp);
+    fEquation->RightHandSide(yTemp, ak4);
     yTemp = yInput + hstep * (b51 * dydxInput + b52 * ak2 + b53 * ak3 + b54 * ak4);
 
-    ak5 = (*fEquation)(yTemp); 
+    fEquation->RightHandSide(yTemp, ak5); 
     yTemp = yInput + hstep * 
         (b61 * dydxInput + b62 * ak2 + b63 * ak3 + b64 * ak4 + b65 * ak5);
 
-    ak6 = (*fEquation)(yTemp);
+    fEquation->RightHandSide(yTemp, ak6);
     yOutput = yInput + hstep * 
         (b71 * dydxInput + b72 * ak2 + b73 * ak3 + 
             b74 * ak4 + b75 * ak5 + b76 * ak6);
 
-    ak7 = (*fEquation)(yOutput);
+    fEquation->RightHandSide(yOutput, ak7);
     yError = hstep * 
         (dc1 * dydxInput + dc2 * ak2 + dc3 * ak3 + 
          dc4 * ak4 + dc5 * ak5 + dc6 * ak6 + dc7 * ak7);
@@ -88,7 +89,7 @@ void VDormandPrince745<EquationOfMotion>::makeStep(
 
 
 template <typename EquationOfMotion>
-G4double VDormandPrince745<EquationOfMotion>::DistChord() const
+G4double DormandPrince745<EquationOfMotion, Double_8v>::DistChord() const
 {
     const G4double
         hf1 = 6025192743.0 / 30085553152.0,

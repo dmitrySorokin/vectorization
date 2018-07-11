@@ -3,13 +3,13 @@
 
 using namespace field_utils;
 
-template <typename EquationOfMotion>
-void DormandPrince745<EquationOfMotion>::Stepper(
-    const G4double yInput[],
-    const G4double dydxInput[],
+template <typename EquationOfMotion, typename State>
+void DormandPrince745<EquationOfMotion, State>::Stepper(
+    const State& yInput,
+    const State& dydxInput,
     G4double hstep,
-    G4double yOutput[],
-    G4double yError[])
+    State& yOutput,
+    State& yError)
 {
     copy(fyIn, yInput);
     copy(fdydx, dydxInput);
@@ -20,13 +20,13 @@ void DormandPrince745<EquationOfMotion>::Stepper(
     copy(yOutput, fyOut);
 }
 
-template <typename EquationOfMotion>
-void DormandPrince745<EquationOfMotion>::makeStep(
-    const G4double yInput[],
-    const G4double dydxInput[],
+template <typename EquationOfMotion, typename State>
+void DormandPrince745<EquationOfMotion, State>::makeStep(
+    const State& yInput,
+    const State& dydxInput,
     G4double hstep,
-    G4double yOutput[],
-    G4double yError[])
+    State& yOutput,
+    State& yError)
 {
     const G4double
         b21 = 0.2,
@@ -56,7 +56,7 @@ void DormandPrince745<EquationOfMotion>::makeStep(
         dc7 = -(- 1.0 / 40.0);
 
 
-    G4double yTemp[G4FieldTrack::ncompSVEC];
+    State yTemp;
     yOutput[7] = yTemp[7] = yInput[7];
     
     // dydxIn = fEquation(yIn);
@@ -94,8 +94,8 @@ void DormandPrince745<EquationOfMotion>::makeStep(
 }
 
 
-template <typename EquationOfMotion>
-G4double DormandPrince745<EquationOfMotion>::DistChord() const
+template <typename EquationOfMotion, typename State>
+G4double DormandPrince745<EquationOfMotion, State>::DistChord() const
 {
     const G4double
         hf1 = 6025192743.0 / 30085553152.0,

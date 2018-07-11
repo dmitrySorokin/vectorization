@@ -27,13 +27,13 @@
 #ifndef VDORMAND_PRINCE_745_HH
 #define VDORMAND_PRINCE_745_HH
 
-#include "VMagUsualEquation.hh"
+#include "DormandPrince745.hh"
 
 
 template <typename EquationOfMotion>
-class VDormandPrince745 {
+class DormandPrince745<EquationOfMotion, Double_8v> {
 public:
-    VDormandPrince745(EquationOfMotion* equation):
+    DormandPrince745(EquationOfMotion* equation):
         fEquation(equation)
     {}
    

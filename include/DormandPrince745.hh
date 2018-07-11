@@ -27,9 +27,9 @@
 #ifndef DORMAND_PRINCE_745_HH
 #define DORMAND_PRINCE_745_HH
 
-#include <G4FieldTrack.hh>
+#include <G4types.hh>
 
-template <typename EquationOfMotion>
+template <typename EquationOfMotion, typename State>
 class DormandPrince745 {
 public:
     DormandPrince745(EquationOfMotion* equation):
@@ -37,30 +37,25 @@ public:
     {}
    
     void Stepper(
-        const G4double yInput[],
-        const G4double dydxInput[],
+        const State& yInput,
+        const State& dydxInput,
         G4double hstep,
-        G4double yOutput[],
-        G4double yError[]);
+        State& yOutput,
+        State& yError);
 
     G4double DistChord() const;
 
 private:
     void makeStep(
-        const G4double yInput[],
-        const G4double dydx[],
+        const State& yInput,
+        const State& dydx,
         G4double hstep,
-        G4double yOutput[],
-        G4double yError[]);
+        State& yOutput,
+        State& yError);
 
     EquationOfMotion* fEquation;
-    G4double fyIn[G4FieldTrack::ncompSVEC], fyOut[G4FieldTrack::ncompSVEC], fdydx[G4FieldTrack::ncompSVEC];
-    G4double ak2[G4FieldTrack::ncompSVEC];
-    G4double ak3[G4FieldTrack::ncompSVEC];
-    G4double ak4[G4FieldTrack::ncompSVEC];
-    G4double ak5[G4FieldTrack::ncompSVEC];
-    G4double ak6[G4FieldTrack::ncompSVEC];
-    G4double ak7[G4FieldTrack::ncompSVEC];
+    State fyIn, fyOut, fdydx;
+    State ak2, ak3, ak4, ak5, ak6, ak7;
     G4double fhstep;
 };
 
