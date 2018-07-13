@@ -27,7 +27,10 @@
 #ifndef DORMAND_PRINCE_745_HH
 #define DORMAND_PRINCE_745_HH
 
-#include <G4types.hh>
+#include <G4Types.hh>
+
+template <typename D, typename S>
+void copy(D& dst, const S& src);
 
 template <typename EquationOfMotion, typename State>
 class DormandPrince745 {
