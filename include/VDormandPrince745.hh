@@ -45,18 +45,34 @@ public:
         Double_8v& yError);
 
     G4double DistChord() const;
+    G4double DistChord2() const;
+    G4double DistChord3() const;
+
+    void Interpolate(G4double tau, Double_8v& y)
+    {
+        Interpolate4th(y, tau);
+    }
 
 private:
+    struct ACoeffs {
+        Double_8v fa[6];
+        Double_8v& operator [] (size_t i) { return fa[i - 2]; }
+        const Double_8v& operator [] (size_t i) const { return fa[i - 2]; }
+    };
+
     void makeStep(
         const Double_8v& yInput,
         const Double_8v& dydx,
         G4double hstep,
         Double_8v& yOutput,
-        Double_8v& yError);
+        Double_8v& yError,
+        ACoeffs& ak) const;
+
+    void Interpolate4th(Double_8v& y, G4double tau) const;
 
     EquationOfMotion* fEquation;
     Double_8v fyIn, fyOut, fdydx;
-    Double_8v ak2, ak3, ak4, ak5, ak6, ak7;
+    ACoeffs fak;
     G4double fhstep;
 };
 

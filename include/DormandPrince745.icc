@@ -15,7 +15,7 @@ void DormandPrince745<EquationOfMotion, State>::Stepper(
     copy(fdydx, dydxInput);
     fhstep = hstep;
     
-    makeStep(fyIn, dydxInput, fhstep, fyOut, yError);
+    makeStep(fyIn, dydxInput, fhstep, fyOut, yError, fak);
 
     copy(yOutput, fyOut);
 }
@@ -26,7 +26,8 @@ void DormandPrince745<EquationOfMotion, State>::makeStep(
     const State& dydxInput,
     G4double hstep,
     State& yOutput,
-    State& yError)
+    State& yError,
+    ACoeffs& ak) const
 {
     const G4double
         b21 = 0.2,
@@ -63,34 +64,61 @@ void DormandPrince745<EquationOfMotion, State>::makeStep(
     for (G4int i = 0; i < 6; ++i)
         yTemp[i] = yInput[i] + b21 * hstep * dydxInput[i];
 
-    fEquation->RightHandSide(yTemp, ak2);    
+    fEquation->RightHandSide(yTemp, ak[2]);    
     for (G4int i = 0; i < 6; ++i)        
-        yTemp[i] = yInput[i] + hstep * (b31 * dydxInput[i] + b32 * ak2[i]);
+        yTemp[i] = yInput[i] + hstep * (b31 * dydxInput[i] + b32 * ak[2][i]);
 
-    fEquation->RightHandSide(yTemp, ak3);
+    fEquation->RightHandSide(yTemp, ak[3]);
     for (G4int i = 0; i < 6; ++i)
-        yTemp[i] = yInput[i] + hstep * (b41 * dydxInput[i] + b42 * ak2[i] + b43 * ak3[i]);
+        yTemp[i] = yInput[i] + hstep * (b41 * dydxInput[i] + b42 * ak[2][i] + b43 * ak[3][i]);
 
-    fEquation->RightHandSide(yTemp, ak4);
+    fEquation->RightHandSide(yTemp, ak[4]);
     for (G4int i = 0; i < 6; ++i)
-        yTemp[i] = yInput[i] + hstep * (b51 * dydxInput[i] + b52 * ak2[i] + b53 * ak3[i] + b54 * ak4[i]);
+        yTemp[i] = yInput[i] + hstep * (b51 * dydxInput[i] + b52 * ak[2][i] + b53 * ak[3][i] + b54 * ak[4][i]);
 
-    fEquation->RightHandSide(yTemp, ak5);
+    fEquation->RightHandSide(yTemp, ak[5]);
     for (G4int i = 0; i < 6; ++i)
         yTemp[i] = yInput[i] + hstep * 
-            (b61 * dydxInput[i] + b62 * ak2[i] + b63 * ak3[i] + b64 * ak4[i] + b65 * ak5[i]);
+            (b61 * dydxInput[i] + b62 * ak[2][i] + b63 * ak[3][i] + b64 * ak[4][i] + b65 * ak[5][i]);
 
-    fEquation->RightHandSide(yTemp, ak6);
+    fEquation->RightHandSide(yTemp, ak[6]);
     for (G4int i = 0; i < 6; ++i)
         yOutput[i] = yInput[i] + hstep * 
-            (b71 * dydxInput[i] + b72 * ak2[i] + b73 * ak3[i] + 
-             b74 * ak4[i] + b75 * ak5[i] + b76 * ak6[i]);
+            (b71 * dydxInput[i] + b72 * ak[2][i] + b73 * ak[3][i] + 
+             b74 * ak[4][i] + b75 * ak[5][i] + b76 * ak[6][i]);
 
-    fEquation->RightHandSide(yOutput, ak7);
-    for (G4int i = 0; i < 6; ++i)
-        yError[i] = hstep * 
-            (dc1 * dydxInput[i] + dc2 * ak2[i] + dc3 * ak3[i] + 
-            dc4 * ak4[i] + dc5 * ak5[i] + dc6 * ak6[i] + dc7 * ak7[i]);
+    if (yError) {
+        fEquation->RightHandSide(yOutput, ak[7]);
+        for (G4int i = 0; i < 6; ++i)
+            yError[i] = hstep * 
+                (dc1 * dydxInput[i] + dc2 * ak[2][i] + dc3 * ak[3][i] + 
+                dc4 * ak[4][i] + dc5 * ak[5][i] + dc6 * ak[6][i] + dc7 * ak[7][i]);
+    }
+}
+
+template <typename EquationOfMotion, typename State>
+void DormandPrince745<EquationOfMotion, State>::Interpolate4th(State& y, G4double tau) const
+{
+    const G4double
+      tau_2 = tau * tau,
+      tau_3 = tau * tau_2,
+      tau_4 = tau_2 * tau_2;
+    
+    G4double bf1 = 
+        (157015080.0 * tau_4 - 13107642775.0 * tau_3 + 34969693132.0 * tau_2 - 32272833064.0 * tau + 11282082432.0) / 11282082432.0;
+    G4double bf3 = 
+        - 100.0 * tau * (15701508.0 * tau_3 - 914128567.0 * tau_2 + 2074956840.0 * tau - 1323431896.0) / 32700410799.0;
+    G4double bf4 = 25.0 * tau * (94209048.0 * tau_3 - 1518414297.0 * tau_2 + 2460397220.0 * tau - 889289856.0) / 5641041216.0;
+    G4double bf5 = - 2187.0 * tau * (52338360.0 * tau_3 - 451824525.0 * tau_2 + 687873124.0 * tau - 259006536.0) / 199316789632.0;
+    G4double bf6 =  11.0 * tau * (106151040.0 * tau_3 - 661884105.0 * tau_2 + 946554244.0 * tau - 361440756.0) / 2467955532.0;
+    G4double bf7 = tau * (1.0 - tau) * (8293050.0 * tau_2 - 82437520.0 * tau + 44764047.0) / 29380423.0;
+
+    for(G4int i = 0; i < 6; ++i) {
+        y[i] = fyIn[i] + fhstep * tau * 
+            (bf1 * fdydx[i] + bf3 * fak[3][i] + 
+             bf4 * fak[4][i] + bf5 * fak[5][i] + 
+             bf6 * fak[6][i] + bf7 * fak[7][i]);
+    }
 }
 
 template <typename EquationOfMotion, typename State>
@@ -111,9 +139,36 @@ G4double DormandPrince745<EquationOfMotion, State>::DistChord() const
 
     for(G4int i = 0; i < 3; ++i) {
        mid[i] = begin[i] + 0.5 * fhstep * 
-           (hf1 * fdydx[i] + hf2 * ak2[i] + hf3 * ak3[i] + 
-            hf4 * ak4[i] + hf5 * ak5[i] + hf6 * ak6[i] + hf7 * ak7[i]);
+           (hf1 * fdydx[i] + hf2 * fak[2][i] + hf3 * fak[3][i] + 
+            hf4 * fak[4][i] + hf5 * fak[5][i] + hf6 * fak[6][i] + hf7 * fak[7][i]);
     }
+
+    return G4LineSection::Distline(mid, begin, end);
+}
+
+template <typename EquationOfMotion, typename State>
+G4double DormandPrince745<EquationOfMotion, State>::DistChord2() const
+{
+    State yMid;
+    Interpolate4th(yMid, 0.5);
+
+    const G4ThreeVector begin = makeVector(fyIn, Value3D::Position);
+    const G4ThreeVector end = makeVector(fyOut, Value3D::Position);
+    const G4ThreeVector mid = makeVector(yMid, Value3D::Position);
+
+    return G4LineSection::Distline(mid, begin, end);
+}
+
+template <typename EquationOfMotion, typename State>
+G4double DormandPrince745<EquationOfMotion, State>::DistChord3() const
+{
+    ACoeffs ak;
+    State yMid, yError;
+    makeStep(fyIn, fdydx, fhstep / 2., yMid, yError, ak);
+
+    const G4ThreeVector begin = makeVector(fyIn, Value3D::Position);
+    const G4ThreeVector end = makeVector(fyOut, Value3D::Position);
+    const G4ThreeVector mid = makeVector(yMid, Value3D::Position);
 
     return G4LineSection::Distline(mid, begin, end);
 }

@@ -19,7 +19,8 @@
 #include <fstream>
 
 const G4int INTEGRATED_COMPONENTS = 6;
-const G4int NUMBER_OF_INTEGRATION_STEPS = 100000000;
+const G4int NUMBER_OF_INTEGRATION_STEPS = 10000000;
+constexpr G4bool COMPARE_RESULTS = false;
 using G4State = G4double[G4FieldTrack::ncompSVEC];
 using VEquation = MagUsualEquation<G4UniformMagField, Double_8v>;
 using Equation = MagUsualEquation<G4UniformMagField, G4State>;
@@ -57,9 +58,21 @@ void test(
     for (G4int i = 0; i < NUMBER_OF_INTEGRATION_STEPS; ++i) {
         equation->RightHandSide(y, dydx);
         method.Stepper(y, dydx, stepLength, y, error);
-        //out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
-        //out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
-        //out << method.DistChord() << "\n";
+        G4double distChord = method.DistChord();
+        G4double distChord2 = method.DistChord2();
+        G4double distChord3 = method.DistChord3();
+
+        State yMid;
+        method.Interpolate(0.5, yMid);
+
+        if (COMPARE_RESULTS) {
+            out << field_utils::makeVector(y, field_utils::Value3D::Position) << "\n";
+            out << field_utils::makeVector(yMid, field_utils::Value3D::Position) << "\n";
+            out << field_utils::makeVector(error, field_utils::Value3D::Position) << "\n";
+            out << distChord << "\n";
+            out << distChord2 << "\n";
+            out << distChord3 << "\n";
+        }
     }
     G4double time = timer.Elapsed();
 

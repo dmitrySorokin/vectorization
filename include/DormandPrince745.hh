@@ -27,6 +27,7 @@
 #ifndef DORMAND_PRINCE_745_HH
 #define DORMAND_PRINCE_745_HH
 
+#include "aliases.hh"
 #include <G4types.hh>
 
 template <typename EquationOfMotion, typename State>
@@ -44,18 +45,34 @@ public:
         State& yError);
 
     G4double DistChord() const;
+    G4double DistChord2() const;
+    G4double DistChord3() const;
+
+    void Interpolate(G4double tau, State& y)
+    {
+        Interpolate4th(y, tau);
+    }
 
 private:
+    struct ACoeffs {
+        State fa[6];
+        State& operator [] (size_t i) { return fa[i - 2]; }
+        const State& operator [] (size_t i) const { return fa[i - 2]; }
+    };
+
     void makeStep(
         const State& yInput,
         const State& dydx,
         G4double hstep,
         State& yOutput,
-        State& yError);
+        State& yError,
+        ACoeffs& ak) const;
+
+    void Interpolate4th(State& y, G4double tau) const;
 
     EquationOfMotion* fEquation;
     State fyIn, fyOut, fdydx;
-    State ak2, ak3, ak4, ak5, ak6, ak7;
+    ACoeffs fak;
     G4double fhstep;
 };
 
